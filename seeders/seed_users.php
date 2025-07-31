@@ -2,13 +2,25 @@
 
 class SeedUsers {
     public function run($pdo) {
-        $users = [
-            [
+        // Check if admin already exists (created in step 3)
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE role = 'admin'");
+        $stmt->execute();
+        $adminExists = $stmt->fetchColumn() > 0;
+        
+        $users = [];
+        
+        // Only add default admin if none exists (backward compatibility)
+        if (!$adminExists) {
+            $users[] = [
                 'name' => 'Admin User',
                 'email' => 'admin@example.com',
                 'password' => password_hash('admin123', PASSWORD_DEFAULT),
                 'role' => 'admin'
-            ],
+            ];
+        }
+        
+        // Add CSM and Client users
+        $users = array_merge($users, [
             [
                 'name' => 'John CSM',
                 'email' => 'john.csm@example.com',
@@ -39,7 +51,7 @@ class SeedUsers {
                 'password' => password_hash('client123', PASSWORD_DEFAULT),
                 'role' => 'client'
             ]
-        ];
+        ]);
         
         $stmt = $pdo->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)");
         

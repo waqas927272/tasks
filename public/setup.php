@@ -105,16 +105,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Migration failed: ' . $e->getMessage();
         }
     } elseif ($step == 3) {
-        // Run seeders
+        // Create admin user
         try {
             $config = require __DIR__ . '/../config/database.php';
             $dsn = "mysql:host={$config['host']};port={$config['port']};dbname={$config['database']};charset={$config['charset']}";
             $pdo = new PDO($dsn, $config['username'], $config['password']);
             
-            // Run seeders
+            // Validate form data
+            $name = $_POST['admin_name'] ?? '';
+            $email = $_POST['admin_email'] ?? '';
+            $password = $_POST['admin_password'] ?? '';
+            $confirmPassword = $_POST['admin_confirm_password'] ?? '';
+            
+            if (empty($name) || empty($email) || empty($password)) {
+                throw new Exception('All fields are required');
+            }
+            
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                throw new Exception('Invalid email format');
+            }
+            
+            if (strlen($password) < 6) {
+                throw new Exception('Password must be at least 6 characters');
+            }
+            
+            if ($password !== $confirmPassword) {
+                throw new Exception('Passwords do not match');
+            }
+            
+            // Check if admin already exists
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE role = 'admin'");
+            $stmt->execute();
+            if ($stmt->fetchColumn() > 0) {
+                throw new Exception('Admin user already exists');
+            }
+            
+            // Create admin user
+            $stmt = $pdo->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'admin')");
+            $stmt->execute([$name, $email, password_hash($password, PASSWORD_DEFAULT)]);
+            
+            $_SESSION['admin_created'] = true;
+            redirect('setup.php?step=4');
+            exit;
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+        }
+    } elseif ($step == 4) {
+        // Run seeders (optional - only sample data)
+        try {
+            $config = require __DIR__ . '/../config/database.php';
+            $dsn = "mysql:host={$config['host']};port={$config['port']};dbname={$config['database']};charset={$config['charset']}";
+            $pdo = new PDO($dsn, $config['username'], $config['password']);
+            
+            // Run seeders for sample data only
             require_once __DIR__ . '/../seeders/seed_users.php';
             require_once __DIR__ . '/../seeders/seed_tasks.php';
             
+            // Modified seeder to skip admin creation
             $userSeeder = new SeedUsers();
             $userSeeder->run($pdo);
             
@@ -122,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $taskSeeder->run($pdo);
             
             $_SESSION['setup_complete'] = true;
-            redirect('setup.php?step=4');
+            redirect('setup.php?step=5');
             exit;
         } catch (Exception $e) {
             $error = 'Seeding failed: ' . $e->getMessage();
@@ -262,8 +309,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <ul class="steps">
             <li class="<?= $step >= 1 ? ($step > 1 ? 'completed' : 'active') : '' ?>">Database Config</li>
             <li class="<?= $step >= 2 ? ($step > 2 ? 'completed' : 'active') : '' ?>">Run Migrations</li>
-            <li class="<?= $step >= 3 ? ($step > 3 ? 'completed' : 'active') : '' ?>">Seed Data</li>
-            <li class="<?= $step >= 4 ? 'active' : '' ?>">Complete</li>
+            <li class="<?= $step >= 3 ? ($step > 3 ? 'completed' : 'active') : '' ?>">Create Admin</li>
+            <li class="<?= $step >= 4 ? ($step > 4 ? 'completed' : 'active') : '' ?>">Seed Data</li>
+            <li class="<?= $step >= 5 ? 'active' : '' ?>">Complete</li>
         </ul>
         
         <?php if ($message): ?>
@@ -314,30 +362,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="submit">Run Migrations</button>
             </form>
         <?php elseif ($step == 3): ?>
-            <h2>Step 3: Seed Database</h2>
+            <h2>Step 3: Create Admin User</h2>
             <div class="info-box">
-                <p>This will create sample users and tasks to get you started:</p>
+                <p>Create your first administrator account. This will be the primary admin user for the system.</p>
+            </div>
+            <form method="POST">
+                <div class="form-group">
+                    <label for="admin_name">Admin Name</label>
+                    <input type="text" id="admin_name" name="admin_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="admin_email">Admin Email</label>
+                    <input type="email" id="admin_email" name="admin_email" required>
+                </div>
+                <div class="form-group">
+                    <label for="admin_password">Password</label>
+                    <input type="password" id="admin_password" name="admin_password" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="admin_confirm_password">Confirm Password</label>
+                    <input type="password" id="admin_confirm_password" name="admin_confirm_password" required minlength="6">
+                </div>
+                <button type="submit">Create Admin Account</button>
+            </form>
+        <?php elseif ($step == 4): ?>
+            <h2>Step 4: Seed Sample Data (Optional)</h2>
+            <div class="info-box">
+                <p>This will create sample users and tasks to help you get started:</p>
                 <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
-                    <li>1 Admin user</li>
                     <li>2 CSM users</li>
                     <li>3 Client users</li>
                     <li>6 Sample tasks</li>
                 </ul>
+                <p style="margin-top: 1rem;"><strong>Note:</strong> This is optional. You can skip this step if you want to start with a clean system.</p>
             </div>
             <form method="POST">
-                <button type="submit">Seed Database</button>
+                <button type="submit">Create Sample Data</button>
+                <a href="<?= url('setup.php?step=5') ?>" style="display: block; text-align: center; margin-top: 1rem; color: #3498db;">Skip this step</a>
             </form>
-        <?php elseif ($step == 4): ?>
+        <?php elseif ($step == 5): ?>
             <h2>Setup Complete!</h2>
             <div class="alert alert-success">
                 <p>Your Task Management System has been successfully set up!</p>
             </div>
             
             <div class="credentials">
-                <h3>Default Login Credentials:</h3>
-                <p><strong>Admin:</strong> <code>admin@example.com</code> / <code>admin123</code></p>
+                <h3>You can now login with your admin account!</h3>
+                <p>Use the email and password you created in Step 3 to login as administrator.</p>
+                
+                <?php if (isset($_SESSION['setup_complete'])): ?>
+                <h3 style="margin-top: 1rem;">Sample User Credentials (if created):</h3>
                 <p><strong>CSM:</strong> <code>john.csm@example.com</code> / <code>csm123</code></p>
                 <p><strong>Client:</strong> <code>client1@example.com</code> / <code>client123</code></p>
+                <?php endif; ?>
             </div>
             
             <div style="text-align: center; margin-top: 2rem;">
