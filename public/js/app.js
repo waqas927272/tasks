@@ -173,6 +173,9 @@ function showNotificationPopup(notification) {
     }, 5000);
 }
 
+// Keep track of shown notification IDs to avoid duplicates
+let shownNotificationIds = new Set();
+
 function checkForNewNotifications() {
     fetch(url('notifications/recent'), {
         headers: {
@@ -181,26 +184,39 @@ function checkForNewNotifications() {
     })
     .then(response => response.json())
     .then(data => {
-        // Update notification count
+        // Update notification count badge
         const badge = document.getElementById('notification-count');
-        if (badge && data.count > 0) {
-            badge.textContent = data.count;
-            badge.style.display = 'inline-block';
-        } else if (badge) {
-            badge.style.display = 'none';
+        if (badge) {
+            if (data.count > 0) {
+                badge.textContent = data.count;
+                badge.style.display = 'inline-flex';
+            } else {
+                badge.textContent = '';
+                badge.style.display = 'none';
+            }
         }
         
         // Show popup for new notifications
         if (data.notifications && data.notifications.length > 0) {
             data.notifications.forEach(notification => {
-                const notificationTime = new Date(notification.created_at);
-                if (notificationTime > new Date(lastNotificationCheck)) {
-                    showNotificationPopup(notification);
+                // Only show popup if we haven't shown this notification before
+                if (!shownNotificationIds.has(notification.id)) {
+                    const notificationTime = new Date(notification.created_at);
                     
-                    // Play notification sound (optional)
-                    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBj');
-                    audio.volume = 0.3;
-                    audio.play().catch(e => console.log('Audio play failed:', e));
+                    // Only show popup for notifications created after our last check
+                    if (notificationTime > new Date(lastNotificationCheck)) {
+                        showNotificationPopup(notification);
+                        shownNotificationIds.add(notification.id);
+                        
+                        // Play notification sound
+                        try {
+                            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBj');
+                            audio.volume = 0.3;
+                            audio.play().catch(e => console.log('Audio play failed:', e));
+                        } catch (e) {
+                            console.log('Audio not supported:', e);
+                        }
+                    }
                 }
             });
         }
@@ -214,11 +230,20 @@ function checkForNewNotifications() {
 document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('notification-count')) {
         createNotificationPopup();
-        updateNotificationCount();
-        checkForNewNotifications();
         
-        // Check for new notifications every second (1000ms)
-        setInterval(checkForNewNotifications, 1000);
+        // Initial load - get unread count immediately
+        updateNotificationCount();
+        
+        // Set last check time to now to avoid showing old notifications as popups
+        lastNotificationCheck = new Date().toISOString();
+        
+        // Start checking for new notifications after a delay
+        setTimeout(() => {
+            checkForNewNotifications();
+            
+            // Check for new notifications every 2 seconds (more reasonable than 1 second)
+            setInterval(checkForNewNotifications, 2000);
+        }, 1000);
         
         // Update count every 30 seconds (as backup)
         setInterval(updateNotificationCount, 30000);

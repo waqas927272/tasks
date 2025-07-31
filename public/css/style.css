@@ -97,11 +97,18 @@ body {
     position: absolute;
     top: -5px;
     right: -5px;
+    min-width: 20px;
+    min-height: 20px;
     display: none;
+    text-align: center;
+    line-height: 16px;
+    font-weight: bold;
 }
 
 .notification-badge:not(:empty) {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Forms */

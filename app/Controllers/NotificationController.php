@@ -63,9 +63,12 @@ class NotificationController extends Controller {
         // Get last 10 unread notifications
         $notifications = $this->notificationModel->getRecentUnreadNotifications($user['id'], 10);
         
+        // Get total unread count
+        $totalUnreadCount = $this->notificationModel->getUnreadCount($user['id']);
+        
         $this->json([
             'notifications' => $notifications,
-            'count' => count($notifications)
+            'count' => $totalUnreadCount  // Return total unread count, not just recent ones
         ]);
     }
 }
