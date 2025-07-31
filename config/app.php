@@ -1,8 +1,23 @@
 <?php
 
-// Define the base URL for the application
+// Auto-detect base URL
 if (!defined('BASE_URL')) {
-    define('BASE_URL', '/tasks');
+    $scriptName = $_SERVER['SCRIPT_NAME'];
+    $scriptDir = dirname($scriptName);
+    
+    // Remove '/public' from the path if present
+    $baseUrl = str_replace('/public', '', $scriptDir);
+    $baseUrl = str_replace('\\', '/', $baseUrl);
+    
+    // Remove trailing slash
+    $baseUrl = rtrim($baseUrl, '/');
+    
+    // If we're at the root, set to empty string
+    if ($baseUrl === '/' || $baseUrl === '.') {
+        $baseUrl = '';
+    }
+    
+    define('BASE_URL', $baseUrl);
 }
 
 // Helper function to generate URLs

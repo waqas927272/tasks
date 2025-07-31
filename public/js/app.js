@@ -1,5 +1,19 @@
-// Base URL helper
-const BASE_URL = '/tasks';
+// Base URL helper - auto-detect from current location
+function getBaseUrl() {
+    const path = window.location.pathname;
+    const publicIndex = path.indexOf('/public/');
+    if (publicIndex !== -1) {
+        return path.substring(0, publicIndex);
+    }
+    // Check if we're in a subdirectory
+    const parts = path.split('/').filter(p => p);
+    if (parts.length > 0 && !parts[parts.length - 1].includes('.')) {
+        return '/' + parts[0];
+    }
+    return '';
+}
+
+const BASE_URL = getBaseUrl();
 
 function url(path) {
     return BASE_URL + (path.startsWith('/') ? path : '/' + path);
