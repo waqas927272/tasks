@@ -128,7 +128,7 @@ function markAllAsRead() {
 
 // Update Notification Count
 function updateNotificationCount() {
-    fetch(url('notifications/count'), {
+    fetch(url('api.php/notifications/count'), {
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
         },
@@ -219,7 +219,7 @@ function showNotificationPopup(notification) {
 let shownNotificationIds = new Set();
 
 function checkForNewNotifications() {
-    fetch(url('notifications/recent'), {
+    fetch(url('api.php/notifications/recent'), {
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
         },
