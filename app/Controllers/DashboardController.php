@@ -22,6 +22,14 @@ class DashboardController extends Controller {
         $this->requireAuth();
         $user = $this->getCurrentUser();
         
+        // Handle case where user is not found
+        if (!$user) {
+            $_SESSION = [];
+            session_destroy();
+            $this->redirect('login');
+            return;
+        }
+        
         $stats = $this->getStats($user);
         $recentTasks = $this->getRecentTasks($user);
         $notifications = $this->notificationModel->getUserNotifications($user['id'], 5);
@@ -43,6 +51,11 @@ class DashboardController extends Controller {
             'completed' => 0
         ];
         
+        // Return empty stats if user is not found
+        if (!$user || !isset($user['role'])) {
+            return $stats;
+        }
+        
         if ($user['role'] === 'admin') {
             $tasks = $this->taskModel->all();
         } elseif ($user['role'] === 'csm') {
@@ -60,6 +73,11 @@ class DashboardController extends Controller {
     }
     
     private function getRecentTasks($user) {
+        // Return empty array if user is not found
+        if (!$user || !isset($user['role'])) {
+            return [];
+        }
+        
         $sql = "SELECT t.*, u1.name as client_name, u2.name as csm_name 
                 FROM tasks t 
                 JOIN users u1 ON t.client_id = u1.id 
