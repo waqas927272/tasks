@@ -23,7 +23,7 @@ ob_start();
                     </div>
                     <p class="notification-message"><?= htmlspecialchars($notification['message']) ?></p>
                     <div class="notification-actions">
-                        <a href="/tasks/<?= $notification['task_id'] ?>" class="btn btn-sm btn-info">View Task</a>
+                        <a href="<?= url('tasks/' . $notification['task_id']) ?>" class="btn btn-sm btn-info">View Task</a>
                         <?php if (!$notification['is_read']): ?>
                             <button onclick="markAsRead(<?= $notification['id'] ?>)" class="btn btn-sm btn-secondary">Mark as Read</button>
                         <?php endif; ?>

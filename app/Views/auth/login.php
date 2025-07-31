@@ -1,4 +1,5 @@
 <?php 
+require_once __DIR__ . '/../../../config/app.php';
 $title = 'Login';
 ob_start(); 
 ?>
@@ -13,7 +14,7 @@ ob_start();
             </div>
         <?php endif; ?>
         
-        <form method="POST" action="/login" class="auth-form">
+        <form method="POST" action="<?= url('login') ?>" class="auth-form">
             <div class="form-group">
                 <label for="email">Email</label>
                 <input type="email" id="email" name="email" class="form-control <?= isset($errors['email']) ? 'is-invalid' : '' ?>" 
@@ -35,7 +36,7 @@ ob_start();
         </form>
         
         <p class="auth-footer">
-            Don't have an account? <a href="/register">Register here</a>
+            Don't have an account? <a href="<?= url('register') ?>">Register here</a>
         </p>
     </div>
 </div>

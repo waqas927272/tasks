@@ -1,10 +1,11 @@
+<?php require_once __DIR__ . '/../../../config/app.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $title ?? 'Task Management System' ?></title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="<?= url('css/style.css') ?>">
 </head>
 <body>
     <?php if (isset($_SESSION['user_id'])): ?>
@@ -29,6 +30,6 @@
         <?= $content ?>
     </div>
     
-    <script src="/js/app.js"></script>
+    <script src="<?= url('js/app.js') ?>"></script>
 </body>
 </html>

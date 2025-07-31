@@ -1,6 +1,12 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 session_start();
+
+// Load app config
+require_once __DIR__ . '/../config/app.php';
 
 // Autoloader
 spl_autoload_register(function ($class) {
@@ -20,9 +26,29 @@ spl_autoload_register(function ($class) {
     }
 });
 
-// Check if setup is needed
+// Check if setup is needed by testing database connection
+$setupNeeded = false;
 if (!file_exists(__DIR__ . '/../.env')) {
-    header('Location: /setup.php');
+    $setupNeeded = true;
+} else {
+    // Test database connection
+    try {
+        $config = require __DIR__ . '/../config/database.php';
+        $dsn = "mysql:host={$config['host']};port={$config['port']};dbname={$config['database']};charset={$config['charset']}";
+        $pdo = new PDO($dsn, $config['username'], $config['password']);
+        
+        // Check if tables exist
+        $result = $pdo->query("SHOW TABLES LIKE 'users'");
+        if ($result->rowCount() == 0) {
+            $setupNeeded = true;
+        }
+    } catch (PDOException $e) {
+        $setupNeeded = true;
+    }
+}
+
+if ($setupNeeded) {
+    header('Location: setup.php');
     exit;
 }
 

@@ -1,38 +1,67 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 session_start();
+
+// Load app config
+require_once __DIR__ . '/../config/app.php';
 
 $message = '';
 $error = '';
 $step = $_GET['step'] ?? 1;
 
+// Check if setup is already complete
+$setupComplete = false;
+if (file_exists(__DIR__ . '/../.env')) {
+    try {
+        $config = require __DIR__ . '/../config/database.php';
+        $dsn = "mysql:host={$config['host']};port={$config['port']};dbname={$config['database']};charset={$config['charset']}";
+        $pdo = new PDO($dsn, $config['username'], $config['password']);
+        
+        // Check if tables exist
+        $result = $pdo->query("SHOW TABLES LIKE 'users'");
+        if ($result->rowCount() > 0) {
+            $setupComplete = true;
+        }
+    } catch (PDOException $e) {
+        // Setup not complete if connection fails
+    }
+}
+
+// If setup is complete and trying to access setup, redirect to login
+if ($setupComplete && !isset($_GET['force'])) {
+    redirect('login');
+}
+
 // Check if .env file exists
-if (!file_exists('.env') && $step == 1) {
+if (!file_exists(__DIR__ . '/../.env') && $step == 1) {
     // Copy from .env.example
-    if (file_exists('.env.example')) {
-        copy('.env.example', '.env');
+    if (file_exists(__DIR__ . '/../.env.example')) {
+        copy(__DIR__ . '/../.env.example', __DIR__ . '/../.env');
         $message = '.env file created from .env.example. Please update the database settings below.';
     }
 }
 
 // Load environment variables
-require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($step == 1) {
         // Update .env file
-        $envContent = file_get_contents('.env');
+        $envContent = file_get_contents(__DIR__ . '/../.env');
         $envContent = preg_replace('/DB_HOST=.*/', 'DB_HOST=' . $_POST['db_host'], $envContent);
         $envContent = preg_replace('/DB_PORT=.*/', 'DB_PORT=' . $_POST['db_port'], $envContent);
         $envContent = preg_replace('/DB_DATABASE=.*/', 'DB_DATABASE=' . $_POST['db_database'], $envContent);
         $envContent = preg_replace('/DB_USERNAME=.*/', 'DB_USERNAME=' . $_POST['db_username'], $envContent);
         $envContent = preg_replace('/DB_PASSWORD=.*/', 'DB_PASSWORD=' . $_POST['db_password'], $envContent);
         
-        file_put_contents('.env', $envContent);
+        file_put_contents(__DIR__ . '/../.env', $envContent);
         
         // Test connection
         try {
-            $config = require __DIR__ . '/config/database.php';
+            $config = require __DIR__ . '/../config/database.php';
             $dsn = "mysql:host={$config['host']};port={$config['port']};charset={$config['charset']}";
             $pdo = new PDO($dsn, $config['username'], $config['password']);
             
@@ -41,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->exec("USE `{$config['database']}`");
             
             $_SESSION['setup_db_connected'] = true;
-            header('Location: setup.php?step=2');
+            redirect('setup.php?step=2');
             exit;
         } catch (PDOException $e) {
             $error = 'Database connection failed: ' . $e->getMessage();
@@ -49,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($step == 2) {
         // Run migrations
         try {
-            $config = require __DIR__ . '/config/database.php';
+            $config = require __DIR__ . '/../config/database.php';
             $dsn = "mysql:host={$config['host']};port={$config['port']};dbname={$config['database']};charset={$config['charset']}";
             $pdo = new PDO($dsn, $config['username'], $config['password']);
             
@@ -58,18 +87,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'create_users_table.php',
                 'create_tasks_table.php',
                 'create_notifications_table.php',
-                'create_task_history_table.php'
+                'create_task_history_table.php',
+                'create_task_attachments_table.php'
             ];
             
             foreach ($migrations as $migration) {
-                require_once __DIR__ . '/migrations/' . $migration;
+                require_once __DIR__ . '/../migrations/' . $migration;
                 $className = str_replace(' ', '', ucwords(str_replace('_', ' ', basename($migration, '.php'))));
                 $migrationClass = new $className();
                 $migrationClass->up($pdo);
             }
             
             $_SESSION['setup_migrations_done'] = true;
-            header('Location: setup.php?step=3');
+            redirect('setup.php?step=3');
             exit;
         } catch (Exception $e) {
             $error = 'Migration failed: ' . $e->getMessage();
@@ -77,13 +107,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($step == 3) {
         // Run seeders
         try {
-            $config = require __DIR__ . '/config/database.php';
+            $config = require __DIR__ . '/../config/database.php';
             $dsn = "mysql:host={$config['host']};port={$config['port']};dbname={$config['database']};charset={$config['charset']}";
             $pdo = new PDO($dsn, $config['username'], $config['password']);
             
             // Run seeders
-            require_once __DIR__ . '/seeders/seed_users.php';
-            require_once __DIR__ . '/seeders/seed_tasks.php';
+            require_once __DIR__ . '/../seeders/seed_users.php';
+            require_once __DIR__ . '/../seeders/seed_tasks.php';
             
             $userSeeder = new SeedUsers();
             $userSeeder->run($pdo);
@@ -92,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $taskSeeder->run($pdo);
             
             $_SESSION['setup_complete'] = true;
-            header('Location: setup.php?step=4');
+            redirect('setup.php?step=4');
             exit;
         } catch (Exception $e) {
             $error = 'Seeding failed: ' . $e->getMessage();
@@ -311,7 +341,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             
             <div style="text-align: center; margin-top: 2rem;">
-                <a href="/login" style="display: inline-block; padding: 0.75rem 2rem; background: #27ae60; color: white; text-decoration: none; border-radius: 4px;">Go to Login</a>
+                <a href="<?= url('login') ?>" style="display: inline-block; padding: 0.75rem 2rem; background: #27ae60; color: white; text-decoration: none; border-radius: 4px;">Go to Login</a>
             </div>
         <?php endif; ?>
     </div>

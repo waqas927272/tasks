@@ -7,7 +7,7 @@ ob_start();
     <div class="auth-box">
         <h1 class="auth-title">Register</h1>
         
-        <form method="POST" action="/register" class="auth-form">
+        <form method="POST" action="<?= url('register') ?>" class="auth-form">
             <div class="form-group">
                 <label for="name">Name</label>
                 <input type="text" id="name" name="name" class="form-control <?= isset($errors['name']) ? 'is-invalid' : '' ?>" 
@@ -46,7 +46,7 @@ ob_start();
         </form>
         
         <p class="auth-footer">
-            Already have an account? <a href="/login">Login here</a>
+            Already have an account? <a href="<?= url('login') ?>">Login here</a>
         </p>
     </div>
 </div>

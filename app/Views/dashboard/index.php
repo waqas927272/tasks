@@ -34,10 +34,16 @@ ob_start();
                 <div class="task-list">
                     <?php foreach ($recentTasks as $task): ?>
                         <div class="task-item">
-                            <h4><a href="/tasks/<?= $task['id'] ?>"><?= htmlspecialchars($task['heading']) ?></a></h4>
+                            <h4><a href="<?= url('tasks/' . $task['id']) ?>"><?= htmlspecialchars($task['heading']) ?></a></h4>
                             <div class="task-meta">
-                                <span class="task-client">Client: <?= htmlspecialchars($task['client_name']) ?></span>
-                                <span class="task-csm">CSM: <?= htmlspecialchars($task['csm_name']) ?></span>
+                                <?php if ($_SESSION['user_role'] === 'admin'): ?>
+                                    <span class="task-client">Client: <?= htmlspecialchars($task['client_name']) ?></span>
+                                    <span class="task-csm">CSM: <?= htmlspecialchars($task['csm_name']) ?></span>
+                                <?php elseif ($_SESSION['user_role'] === 'csm'): ?>
+                                    <span class="task-client">Client: <?= htmlspecialchars($task['client_name']) ?></span>
+                                <?php elseif ($_SESSION['user_role'] === 'client'): ?>
+                                    <span class="task-csm">CSM: <?= htmlspecialchars($task['csm_name']) ?></span>
+                                <?php endif; ?>
                                 <span class="task-status status-<?= $task['status'] ?>"><?= ucfirst($task['status']) ?></span>
                             </div>
                             <p class="task-due">Due: <?= date('M d, Y', strtotime($task['due_date'])) ?></p>
@@ -60,7 +66,7 @@ ob_start();
                         </div>
                     <?php endforeach; ?>
                 </div>
-                <a href="/notifications" class="view-all-link">View all notifications</a>
+                <a href="<?= url('notifications') ?>" class="view-all-link">View all notifications</a>
             <?php endif; ?>
         </div>
     </div>

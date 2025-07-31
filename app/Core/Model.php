@@ -33,9 +33,9 @@ abstract class Model {
         $placeholders = ':' . implode(', :', array_keys($fields));
         
         $sql = "INSERT INTO {$this->table} ({$columns}) VALUES ({$placeholders})";
-        $this->db->execute($sql, $fields);
+        $this->executeQuery($sql, $fields);
         
-        return $this->find($this->db->lastInsertId());
+        return $this->find($this->getLastInsertId());
     }
     
     public function update($id, $data) {
@@ -67,5 +67,25 @@ abstract class Model {
         $modelInstance = new $model();
         $value = $this->{$localKey} ?? null;
         return $value ? $modelInstance->where($foreignKey, $value) : [];
+    }
+    
+    // Add method to execute custom queries
+    public function query($sql, $params = []) {
+        return $this->db->fetchAll($sql, $params);
+    }
+    
+    // Add method to get single result from custom query
+    public function queryOne($sql, $params = []) {
+        return $this->db->fetch($sql, $params);
+    }
+    
+    // Add method to execute queries without returning results
+    public function executeQuery($sql, $params = []) {
+        return $this->db->execute($sql, $params);
+    }
+    
+    // Add method to get last insert ID
+    public function getLastInsertId() {
+        return $this->db->lastInsertId();
     }
 }

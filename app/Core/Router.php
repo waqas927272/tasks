@@ -33,9 +33,15 @@ class Router {
         $method = $_SERVER['REQUEST_METHOD'];
         $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         
-        $basePath = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
-        if ($basePath !== '/') {
-            $path = str_replace($basePath, '', $path);
+        // Get the base path from the public directory
+        $scriptDir = dirname($_SERVER['SCRIPT_NAME']);
+        // Remove /public from the path if present
+        $basePath = str_replace('/public', '', $scriptDir);
+        $basePath = str_replace('\\', '/', $basePath);
+        
+        // Remove the base path from the request URI
+        if ($basePath !== '/' && strpos($path, $basePath) === 0) {
+            $path = substr($path, strlen($basePath));
         }
         
         $path = '/' . trim($path, '/');

@@ -14,7 +14,7 @@ class AuthController extends Controller {
     
     public function login() {
         if ($this->isAuthenticated()) {
-            $this->redirect('/dashboard');
+            $this->redirect('dashboard');
         }
         
         $this->view('auth.login');
@@ -46,7 +46,7 @@ class AuthController extends Controller {
             $_SESSION['user_name'] = $user['name'];
             $_SESSION['user_role'] = $user['role'];
             
-            $this->redirect('/dashboard');
+            $this->redirect('dashboard');
         } else {
             $this->view('auth.login', [
                 'errors' => ['general' => 'Invalid email or password'],
@@ -57,12 +57,12 @@ class AuthController extends Controller {
     
     public function logout() {
         session_destroy();
-        $this->redirect('/login');
+        $this->redirect('login');
     }
     
     public function register() {
         if ($this->isAuthenticated()) {
-            $this->redirect('/dashboard');
+            $this->redirect('dashboard');
         }
         
         $this->view('auth.register');
@@ -115,7 +115,7 @@ class AuthController extends Controller {
             $_SESSION['user_name'] = $user['name'];
             $_SESSION['user_role'] = $user['role'];
             
-            $this->redirect('/dashboard');
+            $this->redirect('dashboard');
         }
     }
 }

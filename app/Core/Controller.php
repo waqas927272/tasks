@@ -2,6 +2,8 @@
 
 namespace App\Core;
 
+require_once __DIR__ . '/../../config/app.php';
+
 abstract class Controller {
     protected function view($view, $data = []) {
         extract($data);
@@ -14,9 +16,8 @@ abstract class Controller {
         }
     }
     
-    protected function redirect($url) {
-        header("Location: {$url}");
-        exit;
+    protected function redirect($path) {
+        redirect($path);
     }
     
     protected function json($data, $statusCode = 200) {
@@ -40,7 +41,7 @@ abstract class Controller {
     
     protected function requireAuth() {
         if (!$this->isAuthenticated()) {
-            $this->redirect('/login');
+            $this->redirect('login');
         }
     }
     

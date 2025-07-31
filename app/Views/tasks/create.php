@@ -6,7 +6,7 @@ ob_start();
 <div class="form-page">
     <h1 class="page-title">Create Task</h1>
     
-    <form method="POST" action="/tasks" class="task-form">
+    <form method="POST" action="<?= url('tasks') ?>" class="task-form">
         <div class="form-group">
             <label for="client_id">Client</label>
             <select id="client_id" name="client_id" class="form-control <?= isset($errors['client_id']) ? 'is-invalid' : '' ?>" required>
@@ -71,7 +71,7 @@ ob_start();
         
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Create Task</button>
-            <a href="/tasks" class="btn btn-secondary">Cancel</a>
+            <a href="<?= url('tasks') ?>" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
 </div>

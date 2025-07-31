@@ -77,6 +77,6 @@ class DashboardController extends Controller {
         
         $sql .= "ORDER BY t.updated_at DESC LIMIT 5";
         
-        return $this->taskModel->db->fetchAll($sql, $params);
+        return $this->taskModel->query($sql, $params);
     }
 }

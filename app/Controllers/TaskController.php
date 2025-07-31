@@ -5,14 +5,17 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\TaskAttachment;
 
 class TaskController extends Controller {
     private $taskModel;
     private $userModel;
+    private $attachmentModel;
     
     public function __construct() {
         $this->taskModel = new Task();
         $this->userModel = new User();
+        $this->attachmentModel = new TaskAttachment();
     }
     
     public function index() {
@@ -97,7 +100,8 @@ class TaskController extends Controller {
         
         $task['client'] = $this->userModel->find($task['client_id']);
         $task['csm'] = $this->userModel->find($task['csm_id']);
-        $task['history'] = $this->taskModel->history();
+        $task['history'] = $this->taskModel->history($id);
+        $task['attachments'] = $this->attachmentModel->getTaskAttachments($id);
         
         $this->view('tasks.show', ['task' => $task]);
     }
@@ -145,17 +149,22 @@ class TaskController extends Controller {
         $data = [];
         $user = $this->getCurrentUser();
         
+        // All users can update heading, description, and status
+        $data['heading'] = $_POST['heading'] ?? $task['heading'];
+        $data['description'] = $_POST['description'] ?? $task['description'];
+        $data['status'] = $_POST['status'] ?? $task['status'];
+        
+        // Only admin can update client, CSM, and due date
         if ($user['role'] === 'admin') {
             $data['client_id'] = $_POST['client_id'] ?? $task['client_id'];
             $data['csm_id'] = $_POST['csm_id'] ?? $task['csm_id'];
-            $data['heading'] = $_POST['heading'] ?? $task['heading'];
-            $data['description'] = $_POST['description'] ?? $task['description'];
             $data['due_date'] = $_POST['due_date'] ?? $task['due_date'];
         }
         
-        $data['status'] = $_POST['status'] ?? $task['status'];
+        // For non-admin users, merge the data with existing task data for validation
+        $validationData = $user['role'] === 'admin' ? $data : array_merge($task, $data);
         
-        $errors = $this->validateTask($data, $id);
+        $errors = $this->validateTask($validationData, $id);
         
         if (!empty($errors)) {
             $clients = $this->userModel->getClients();
@@ -171,6 +180,11 @@ class TaskController extends Controller {
         }
         
         $this->taskModel->update($id, $data);
+        
+        // Handle file uploads
+        if (isset($_FILES['attachments']) && !empty($_FILES['attachments']['name'][0])) {
+            $this->handleFileUploads($id);
+        }
         
         $_SESSION['success'] = 'Task updated successfully';
         $this->redirect('/tasks/' . $id);
@@ -252,5 +266,78 @@ class TaskController extends Controller {
         }
         
         return false;
+    }
+    
+    private function handleFileUploads($taskId) {
+        $uploadDir = 'uploads/tasks/';
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+        $maxFileSize = 10 * 1024 * 1024; // 10MB
+        
+        $uploadedFiles = $_FILES['attachments'];
+        $fileCount = count($uploadedFiles['name']);
+        
+        for ($i = 0; $i < $fileCount; $i++) {
+            if ($uploadedFiles['error'][$i] === UPLOAD_ERR_OK) {
+                $fileName = $uploadedFiles['name'][$i];
+                $fileTmpName = $uploadedFiles['tmp_name'][$i];
+                $fileType = $uploadedFiles['type'][$i];
+                $fileSize = $uploadedFiles['size'][$i];
+                
+                // Validate file type
+                if (!in_array($fileType, $allowedTypes)) {
+                    $_SESSION['error'] = "File type not allowed: $fileName";
+                    continue;
+                }
+                
+                // Validate file size
+                if ($fileSize > $maxFileSize) {
+                    $_SESSION['error'] = "File too large: $fileName (max 10MB)";
+                    continue;
+                }
+                
+                // Generate unique filename
+                $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+                $uniqueFileName = uniqid('task_' . $taskId . '_') . '.' . $fileExtension;
+                $targetPath = __DIR__ . '/../../public/' . $uploadDir . $uniqueFileName;
+                
+                // Move uploaded file
+                if (move_uploaded_file($fileTmpName, $targetPath)) {
+                    // Save to database
+                    $this->attachmentModel->create([
+                        'task_id' => $taskId,
+                        'user_id' => $_SESSION['user_id'],
+                        'filename' => $uniqueFileName,
+                        'original_name' => $fileName,
+                        'file_type' => $fileType,
+                        'file_size' => $fileSize,
+                        'file_path' => $uploadDir . $uniqueFileName
+                    ]);
+                }
+            }
+        }
+    }
+    
+    public function deleteAttachment($attachmentId) {
+        $this->requireAuth();
+        
+        $attachment = $this->attachmentModel->find($attachmentId);
+        
+        if (!$attachment) {
+            $this->json(['error' => 'Attachment not found'], 404);
+            return;
+        }
+        
+        $task = $this->taskModel->find($attachment['task_id']);
+        
+        if (!$this->canEditTask($task)) {
+            $this->json(['error' => 'Unauthorized'], 403);
+            return;
+        }
+        
+        if ($this->attachmentModel->deleteAttachment($attachmentId)) {
+            $this->json(['success' => true]);
+        } else {
+            $this->json(['error' => 'Failed to delete attachment'], 500);
+        }
     }
 }

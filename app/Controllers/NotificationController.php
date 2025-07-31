@@ -55,4 +55,17 @@ class NotificationController extends Controller {
         
         $this->json(['count' => $count]);
     }
+    
+    public function getRecentNotifications() {
+        $this->requireAuth();
+        $user = $this->getCurrentUser();
+        
+        // Get last 10 unread notifications
+        $notifications = $this->notificationModel->getRecentUnreadNotifications($user['id'], 10);
+        
+        $this->json([
+            'notifications' => $notifications,
+            'count' => count($notifications)
+        ]);
+    }
 }

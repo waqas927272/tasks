@@ -6,7 +6,7 @@ ob_start();
 <div class="form-page">
     <h1 class="page-title">Edit User</h1>
     
-    <form method="POST" action="/users/<?= $user['id'] ?>" class="user-form">
+    <form method="POST" action="<?= url('users/' . $user['id']) ?>" class="user-form">
         <div class="form-group">
             <label for="name">Name</label>
             <input type="text" id="name" name="name" class="form-control <?= isset($errors['name']) ? 'is-invalid' : '' ?>" 
@@ -47,7 +47,7 @@ ob_start();
         
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Update User</button>
-            <a href="/users" class="btn btn-secondary">Cancel</a>
+            <a href="<?= url('users') ?>" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
 </div>

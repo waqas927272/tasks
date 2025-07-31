@@ -6,7 +6,7 @@ ob_start();
 <div class="users-page">
     <div class="page-header">
         <h1 class="page-title">Users</h1>
-        <a href="/users/create" class="btn btn-primary">Create User</a>
+        <a href="<?= url('users/create') ?>" class="btn btn-primary">Create User</a>
     </div>
     
     <?php if (empty($users)): ?>
@@ -37,7 +37,7 @@ ob_start();
                             </td>
                             <td><?= date('M d, Y', strtotime($user['created_at'])) ?></td>
                             <td>
-                                <a href="/users/<?= $user['id'] ?>/edit" class="btn btn-sm btn-warning">Edit</a>
+                                <a href="<?= url('users/' . $user['id'] . '/edit') ?>" class="btn btn-sm btn-warning">Edit</a>
                                 <?php if ($user['id'] != $_SESSION['user_id']): ?>
                                     <button onclick="deleteUser(<?= $user['id'] ?>)" class="btn btn-sm btn-danger">Delete</button>
                                 <?php endif; ?>

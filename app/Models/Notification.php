@@ -24,22 +24,34 @@ class Notification extends Model {
     
     public function markAllAsRead($userId) {
         $sql = "UPDATE {$this->table} SET is_read = 1 WHERE user_id = ? AND is_read = 0";
-        return $this->db->execute($sql, [$userId]);
+        return $this->executeQuery($sql, [$userId]);
     }
     
     public function getUnreadCount($userId) {
         $sql = "SELECT COUNT(*) as count FROM {$this->table} WHERE user_id = ? AND is_read = 0";
-        $result = $this->db->fetch($sql, [$userId]);
+        $result = $this->queryOne($sql, [$userId]);
         return $result['count'] ?? 0;
     }
     
     public function getUserNotifications($userId, $limit = 20) {
+        $limit = (int) $limit; // Ensure limit is an integer
         $sql = "SELECT n.*, t.heading as task_heading 
                 FROM {$this->table} n 
                 JOIN tasks t ON n.task_id = t.id 
                 WHERE n.user_id = ? 
                 ORDER BY n.created_at DESC 
-                LIMIT ?";
-        return $this->db->fetchAll($sql, [$userId, $limit]);
+                LIMIT {$limit}";
+        return $this->query($sql, [$userId]);
+    }
+    
+    public function getRecentUnreadNotifications($userId, $limit = 10) {
+        $limit = (int) $limit;
+        $sql = "SELECT n.*, t.heading as task_heading 
+                FROM {$this->table} n 
+                JOIN tasks t ON n.task_id = t.id 
+                WHERE n.user_id = ? AND n.is_read = 0 
+                ORDER BY n.created_at DESC 
+                LIMIT {$limit}";
+        return $this->query($sql, [$userId]);
     }
 }

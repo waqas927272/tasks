@@ -1,0 +1,28 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Upload files
+public/uploads/
+
+# Log files
+storage/logs/*.log
+
+# Claude settings
+.claude/settings.local.json
+
+# Temporary files
+*.tmp
+*.temp

@@ -586,11 +586,83 @@ textarea.form-control {
     color: #666;
 }
 
+/* Task Attachments */
+.task-attachments {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: var(--border-radius);
+}
+
+.task-attachments h3 {
+    margin-bottom: 1rem;
+}
+
+.attachments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.attachment-item {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    padding: 1rem;
+}
+
+.attachment-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.attachment-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.attachment-details {
+    flex: 1;
+}
+
+.attachment-name {
+    font-weight: 600;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.attachment-name:hover {
+    text-decoration: underline;
+}
+
+.attachment-meta {
+    font-size: 0.875rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
+
+.attachment-preview {
+    margin-top: 0.75rem;
+    text-align: center;
+}
+
+.attachment-preview img {
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
 /* Utilities */
 .no-data {
     text-align: center;
     padding: 2rem;
     color: #666;
+}
+
+.form-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
 }
 
 .view-all-link {
@@ -602,6 +674,34 @@ textarea.form-control {
 
 .view-all-link:hover {
     text-decoration: underline;
+}
+
+/* Notification Popups */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+.notification-popup:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15) !important;
 }
 
 /* Responsive */
