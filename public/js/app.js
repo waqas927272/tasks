@@ -2,7 +2,7 @@
 function getBaseUrl() {
     const path = window.location.pathname;
     
-    // Remove filename if present (e.g., /tasks/notifications/index.php -> /tasks/notifications)
+    // Remove filename if present
     let cleanPath = path;
     if (path.includes('.php')) {
         cleanPath = path.substring(0, path.lastIndexOf('/'));
@@ -11,24 +11,22 @@ function getBaseUrl() {
     // Remove trailing slash
     cleanPath = cleanPath.replace(/\/$/, '');
     
-    // Find the base /tasks directory
-    const tasksIndex = cleanPath.lastIndexOf('/tasks');
+    // For production site (tasks.waqaskhattak.com)
+    if (window.location.hostname.includes('waqaskhattak.com')) {
+        // Always return /tasks for the production site
+        return '/tasks';
+    }
+    
+    // For localhost, find the /tasks directory
+    const parts = cleanPath.split('/').filter(p => p);
+    const tasksIndex = parts.indexOf('tasks');
+    
     if (tasksIndex !== -1) {
-        // If we're in a subdirectory of tasks (like /tasks/notifications)
-        // we need to go back to just /tasks
-        return cleanPath.substring(0, tasksIndex + 6); // +6 for "/tasks"
+        // Build path up to and including 'tasks'
+        return '/' + parts.slice(0, tasksIndex + 1).join('/');
     }
     
-    // If we can't find /tasks, check for localhost patterns
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        // For MAMP/XAMPP installations like localhost/tasks
-        const pathParts = cleanPath.split('/').filter(p => p);
-        if (pathParts.length > 0 && pathParts[0] === 'tasks') {
-            return '/tasks';
-        }
-    }
-    
-    // Default: assume we're at the root
+    // Default for localhost at root
     return '';
 }
 
