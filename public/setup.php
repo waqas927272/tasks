@@ -410,6 +410,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <h3>You can now login with your admin account!</h3>
                 <p>Use the email and password you created in Step 3 to login as administrator.</p>
                 
+                <h3 style="margin-top: 1rem;">Next Steps:</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li>✓ Login with your admin account</li>
+                    <li>✓ Create additional users (Admin, CSM, or Client) from the Users menu</li>
+                    <li>✓ Start creating and managing tasks</li>
+                </ul>
+                
                 <?php if (isset($_SESSION['setup_complete'])): ?>
                 <h3 style="margin-top: 1rem;">Sample User Credentials (if created):</h3>
                 <p><strong>CSM:</strong> <code>john.csm@example.com</code> / <code>csm123</code></p>
