@@ -34,13 +34,19 @@ if (!file_exists(__DIR__ . '/../.env')) {
     // Test database connection
     try {
         $config = require __DIR__ . '/../config/database.php';
-        $dsn = "mysql:host={$config['host']};port={$config['port']};dbname={$config['database']};charset={$config['charset']}";
-        $pdo = new PDO($dsn, $config['username'], $config['password']);
         
-        // Check if tables exist
-        $result = $pdo->query("SHOW TABLES LIKE 'users'");
-        if ($result->rowCount() == 0) {
+        // Check if we have valid database credentials
+        if (empty($config['username']) || empty($config['host']) || empty($config['database'])) {
             $setupNeeded = true;
+        } else {
+            $dsn = "mysql:host={$config['host']};port={$config['port']};dbname={$config['database']};charset={$config['charset']}";
+            $pdo = new PDO($dsn, $config['username'], $config['password']);
+            
+            // Check if tables exist
+            $result = $pdo->query("SHOW TABLES LIKE 'users'");
+            if ($result->rowCount() == 0) {
+                $setupNeeded = true;
+            }
         }
     } catch (PDOException $e) {
         $setupNeeded = true;
@@ -48,7 +54,7 @@ if (!file_exists(__DIR__ . '/../.env')) {
 }
 
 if ($setupNeeded) {
-    header('Location: setup.php');
+    header('Location: ' . dirname($_SERVER['SCRIPT_NAME']) . '/setup.php');
     exit;
 }
 

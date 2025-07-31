@@ -18,6 +18,11 @@ class Database {
             $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->connection->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
+            // If connection fails, redirect to setup
+            if (strpos($_SERVER['REQUEST_URI'], 'setup.php') === false) {
+                header('Location: ' . dirname($_SERVER['SCRIPT_NAME']) . '/setup.php');
+                exit;
+            }
             die("Connection failed: " . $e->getMessage());
         }
     }

@@ -31,7 +31,21 @@ if (!function_exists('loadEnv')) {
     }
 }
 
-loadEnv(__DIR__ . '/../.env');
+$envLoaded = loadEnv(__DIR__ . '/../.env');
+
+// If .env doesn't exist or is empty, return minimal config
+if (!$envLoaded || !isset($_ENV['DB_HOST'])) {
+    return [
+        'host' => '',
+        'port' => '3306',
+        'database' => '',
+        'username' => '',
+        'password' => '',
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'prefix' => '',
+    ];
+}
 
 return [
     'host' => $_ENV['DB_HOST'] ?? 'localhost',
