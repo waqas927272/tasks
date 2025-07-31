@@ -1,22 +1,50 @@
-// Base URL helper - auto-detect from current location
+// Base URL helper - works for both localhost and production
 function getBaseUrl() {
     const path = window.location.pathname;
-    const publicIndex = path.indexOf('/public/');
-    if (publicIndex !== -1) {
-        return path.substring(0, publicIndex);
+    
+    // Remove filename if present (e.g., /tasks/notifications/index.php -> /tasks/notifications)
+    let cleanPath = path;
+    if (path.includes('.php')) {
+        cleanPath = path.substring(0, path.lastIndexOf('/'));
     }
-    // Check if we're in a subdirectory
-    const parts = path.split('/').filter(p => p);
-    if (parts.length > 0 && !parts[parts.length - 1].includes('.')) {
-        return '/' + parts[0];
+    
+    // Remove trailing slash
+    cleanPath = cleanPath.replace(/\/$/, '');
+    
+    // Find the base /tasks directory
+    const tasksIndex = cleanPath.lastIndexOf('/tasks');
+    if (tasksIndex !== -1) {
+        // If we're in a subdirectory of tasks (like /tasks/notifications)
+        // we need to go back to just /tasks
+        return cleanPath.substring(0, tasksIndex + 6); // +6 for "/tasks"
     }
+    
+    // If we can't find /tasks, check for localhost patterns
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        // For MAMP/XAMPP installations like localhost/tasks
+        const pathParts = cleanPath.split('/').filter(p => p);
+        if (pathParts.length > 0 && pathParts[0] === 'tasks') {
+            return '/tasks';
+        }
+    }
+    
+    // Default: assume we're at the root
     return '';
 }
 
 const BASE_URL = getBaseUrl();
 
 function url(path) {
-    return BASE_URL + (path.startsWith('/') ? path : '/' + path);
+    // Clean the path
+    path = path.replace(/^\/+/, '').replace(/\/+$/, '');
+    
+    // Handle empty base URL
+    if (!BASE_URL) {
+        return '/' + path;
+    }
+    
+    // Build the full URL
+    return BASE_URL + '/' + path;
 }
 
 // Delete Task
@@ -228,6 +256,16 @@ function checkForNewNotifications() {
 
 // Update notification count on page load
 document.addEventListener('DOMContentLoaded', function() {
+    // Debug: Log URL information
+    console.log('=== URL Debug Info ===');
+    console.log('Hostname:', window.location.hostname);
+    console.log('Pathname:', window.location.pathname);
+    console.log('Base URL detected:', BASE_URL);
+    console.log('Test URLs:');
+    console.log('  - notifications/recent:', url('notifications/recent'));
+    console.log('  - notifications/count:', url('notifications/count'));
+    console.log('===================');
+    
     if (document.getElementById('notification-count')) {
         createNotificationPopup();
         
@@ -241,8 +279,8 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             checkForNewNotifications();
             
-            // Check for new notifications every 2 seconds (more reasonable than 1 second)
-            setInterval(checkForNewNotifications, 2000);
+            // Check for new notifications every 3 seconds
+            setInterval(checkForNewNotifications, 3000);
         }, 1000);
         
         // Update count every 30 seconds (as backup)
