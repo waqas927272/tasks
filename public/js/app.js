@@ -128,36 +128,33 @@ function markAllAsRead() {
 
 // Update Notification Count
 function updateNotificationCount() {
-    const countUrl = url('notifications/count');
-    console.log('[UpdateCount] Fetching from:', countUrl);
-    
-    fetch(countUrl, {
+    fetch(url('notifications/count'), {
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
         },
         credentials: 'same-origin'
     })
     .then(response => {
-        console.log('[UpdateCount] Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
         return response.json();
     })
     .then(data => {
-        console.log('[UpdateCount] Data received:', data);
+        handleRequestSuccess();
         const badge = document.getElementById('notification-count');
         if (badge) {
             if (data.count > 0) {
                 badge.textContent = data.count;
                 badge.style.display = 'inline-flex';
-                console.log('[UpdateCount] Badge updated with count:', data.count);
             } else {
                 badge.style.display = 'none';
-                console.log('[UpdateCount] Badge hidden (count is 0)');
             }
-        } else {
-            console.error('[UpdateCount] Badge element not found!');
         }
     })
-    .catch(error => console.error('[UpdateCount] Error:', error));
+    .catch(error => {
+        handleRequestError(error);
+    });
 }
 
 // Real-time notification system
@@ -225,10 +222,18 @@ function checkForNewNotifications() {
     fetch(url('notifications/recent'), {
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
-        }
+        },
+        credentials: 'same-origin'
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
+        handleRequestSuccess();
+        
         // Update notification count badge
         const badge = document.getElementById('notification-count');
         if (badge) {
@@ -268,21 +273,18 @@ function checkForNewNotifications() {
         
         lastNotificationCheck = new Date().toISOString();
     })
-    .catch(error => console.error('Error checking notifications:', error));
+    .catch(error => {
+        handleRequestError(error);
+    });
 }
+
+// Track failed requests to implement backoff
+let failedRequests = 0;
+let notificationCheckInterval;
+let countUpdateInterval;
 
 // Update notification count on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Debug: Log URL information
-    console.log('=== URL Debug Info ===');
-    console.log('Hostname:', window.location.hostname);
-    console.log('Pathname:', window.location.pathname);
-    console.log('Base URL detected:', BASE_URL);
-    console.log('Test URLs:');
-    console.log('  - notifications/recent:', url('notifications/recent'));
-    console.log('  - notifications/count:', url('notifications/count'));
-    console.log('===================');
-    
     if (document.getElementById('notification-count')) {
         createNotificationPopup();
         
@@ -294,16 +296,54 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Start checking for new notifications after a delay
         setTimeout(() => {
-            checkForNewNotifications();
-            
-            // Check for new notifications every 3 seconds
-            setInterval(checkForNewNotifications, 3000);
-        }, 1000);
-        
-        // Update count every 30 seconds (as backup)
-        setInterval(updateNotificationCount, 30000);
+            startNotificationPolling();
+        }, 2000);
     }
 });
+
+function startNotificationPolling() {
+    // Clear any existing intervals
+    if (notificationCheckInterval) clearInterval(notificationCheckInterval);
+    if (countUpdateInterval) clearInterval(countUpdateInterval);
+    
+    // Check for new notifications every 10 seconds (reduced from 3)
+    notificationCheckInterval = setInterval(() => {
+        if (failedRequests < 3) {
+            checkForNewNotifications();
+        }
+    }, 10000);
+    
+    // Update count every 60 seconds (increased from 30)
+    countUpdateInterval = setInterval(() => {
+        if (failedRequests < 3) {
+            updateNotificationCount();
+        }
+    }, 60000);
+}
+
+// Stop polling if too many errors
+function handleRequestError(error) {
+    failedRequests++;
+    console.error('Request failed:', error);
+    
+    if (failedRequests >= 3) {
+        console.warn('Too many failed requests, stopping notification polling');
+        if (notificationCheckInterval) clearInterval(notificationCheckInterval);
+        if (countUpdateInterval) clearInterval(countUpdateInterval);
+        
+        // Try to restart after 5 minutes
+        setTimeout(() => {
+            failedRequests = 0;
+            console.log('Restarting notification polling...');
+            startNotificationPolling();
+        }, 300000); // 5 minutes
+    }
+}
+
+// Reset failed count on success
+function handleRequestSuccess() {
+    failedRequests = 0;
+}
 
 // Delete Attachment
 function deleteAttachment(id) {
