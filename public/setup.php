@@ -14,6 +14,7 @@ $step = $_GET['step'] ?? 1;
 
 // Check if setup is already complete
 $setupComplete = false;
+$adminExists = false;
 if (file_exists(__DIR__ . '/../.env')) {
     try {
         $config = require __DIR__ . '/../config/database.php';
@@ -23,16 +24,40 @@ if (file_exists(__DIR__ . '/../.env')) {
         // Check if tables exist
         $result = $pdo->query("SHOW TABLES LIKE 'users'");
         if ($result->rowCount() > 0) {
-            $setupComplete = true;
+            // Check if admin user exists
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE role = 'admin'");
+            $stmt->execute();
+            if ($stmt->fetchColumn() > 0) {
+                $adminExists = true;
+                $setupComplete = true;
+            }
         }
     } catch (PDOException $e) {
         // Setup not complete if connection fails
     }
 }
 
-// If setup is complete and trying to access setup, redirect to login
+// If setup is complete (admin exists) and trying to access setup, redirect to login
 if ($setupComplete && !isset($_GET['force'])) {
     redirect('login');
+}
+
+// If tables exist but no admin, start from step 3
+if (!$setupComplete && !$adminExists && file_exists(__DIR__ . '/../.env') && $step == 1) {
+    try {
+        $config = require __DIR__ . '/../config/database.php';
+        $dsn = "mysql:host={$config['host']};port={$config['port']};dbname={$config['database']};charset={$config['charset']}";
+        $pdo = new PDO($dsn, $config['username'], $config['password']);
+        
+        // Check if tables exist
+        $result = $pdo->query("SHOW TABLES LIKE 'users'");
+        if ($result->rowCount() > 0) {
+            // Tables exist but no admin, skip to step 3
+            redirect('setup.php?step=3');
+        }
+    } catch (PDOException $e) {
+        // Continue with normal setup
+    }
 }
 
 // Check if .env file exists
@@ -81,6 +106,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $config = require __DIR__ . '/../config/database.php';
             $dsn = "mysql:host={$config['host']};port={$config['port']};dbname={$config['database']};charset={$config['charset']}";
             $pdo = new PDO($dsn, $config['username'], $config['password']);
+            
+            // Check if tables already exist
+            $result = $pdo->query("SHOW TABLES LIKE 'users'");
+            if ($result->rowCount() > 0) {
+                // Tables already exist, skip to admin creation
+                $_SESSION['setup_migrations_done'] = true;
+                redirect('setup.php?step=3');
+                exit;
+            }
             
             // Run migrations
             $migrations = [
