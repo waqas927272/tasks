@@ -41,8 +41,15 @@ function url(path) {
         return '/' + path;
     }
     
-    // Build the full URL
-    return BASE_URL + '/' + path;
+    // Build the full URL - ensure it starts with /
+    const fullUrl = BASE_URL + '/' + path;
+    
+    // For absolute URLs, ensure they start from the root
+    if (!fullUrl.startsWith('/')) {
+        return '/' + fullUrl;
+    }
+    
+    return fullUrl;
 }
 
 // Delete Task

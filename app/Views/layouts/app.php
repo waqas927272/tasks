@@ -30,7 +30,6 @@
         <?= $content ?>
     </div>
     
-    <script src="<?= url('js/config.js') ?>"></script>
     <script src="<?= url('js/app.js') ?>"></script>
 </body>
 </html>
