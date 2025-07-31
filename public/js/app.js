@@ -123,24 +123,36 @@ function markAllAsRead() {
 
 // Update Notification Count
 function updateNotificationCount() {
-    fetch(url('notifications/count'), {
+    const countUrl = url('notifications/count');
+    console.log('[UpdateCount] Fetching from:', countUrl);
+    
+    fetch(countUrl, {
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
-        }
+        },
+        credentials: 'same-origin'
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('[UpdateCount] Response status:', response.status);
+        return response.json();
+    })
     .then(data => {
+        console.log('[UpdateCount] Data received:', data);
         const badge = document.getElementById('notification-count');
         if (badge) {
             if (data.count > 0) {
                 badge.textContent = data.count;
-                badge.style.display = 'inline-block';
+                badge.style.display = 'inline-flex';
+                console.log('[UpdateCount] Badge updated with count:', data.count);
             } else {
                 badge.style.display = 'none';
+                console.log('[UpdateCount] Badge hidden (count is 0)');
             }
+        } else {
+            console.error('[UpdateCount] Badge element not found!');
         }
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => console.error('[UpdateCount] Error:', error));
 }
 
 // Real-time notification system

@@ -51,6 +51,11 @@ class NotificationController extends Controller {
         $this->requireAuth();
         $user = $this->getCurrentUser();
         
+        if (!$user) {
+            $this->json(['count' => 0, 'error' => 'User not found']);
+            return;
+        }
+        
         $count = $this->notificationModel->getUnreadCount($user['id']);
         
         $this->json(['count' => $count]);
@@ -59,6 +64,11 @@ class NotificationController extends Controller {
     public function getRecentNotifications() {
         $this->requireAuth();
         $user = $this->getCurrentUser();
+        
+        if (!$user) {
+            $this->json(['notifications' => [], 'count' => 0, 'error' => 'User not found']);
+            return;
+        }
         
         // Get last 10 unread notifications
         $notifications = $this->notificationModel->getRecentUnreadNotifications($user['id'], 10);
